@@ -191,6 +191,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  signOutButton: { alignItems: 'center', marginTop: 20, padding: 12 },
+  signOutButton: { alignItems: 'center', marginTop: 18, padding: 12 },
   signOutText: { color: COLORS.danger, fontSize: 15, fontWeight: '500' },
 })

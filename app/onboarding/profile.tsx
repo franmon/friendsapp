@@ -100,7 +100,8 @@ export default function ProfileSetupScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  inner: { padding: 28, paddingTop: 60, flexGrow: 1 },
+  //inner: { padding: 28, paddingTop: 60, flexGrow: 1 },  
+  inner: { padding: 28, paddingTop: 60, paddingBottom: 60, flexGrow: 1 },
   title: { fontSize: 26, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 15, color: COLORS.muted, marginTop: 6, marginBottom: 24 },
   avatarWrap: { alignItems: 'center', gap: 12, marginBottom: 24 },
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, padding: 16, alignItems: 'center' },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  skip: { alignItems: 'center', marginTop: 16, padding: 6 },
+  skip: { alignItems: 'center', marginTop: 20, padding: 6 },
   skipText: { color: COLORS.primary, fontSize: 15, fontWeight: '700' },
   signOut: { alignItems: 'center', marginTop: 4, padding: 6 },
   signOutText: { color: COLORS.muted, fontSize: 13, fontWeight: '600' },
