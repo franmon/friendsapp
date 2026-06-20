@@ -4,6 +4,7 @@ import {
   ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native'
 import { useState } from 'react'
+import { useRouter } from 'expo-router'          // ← AÑADIDO
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { COLORS, RADIUS } from '@/constants/theme'
@@ -12,6 +13,7 @@ import { Group } from '@/types/database'
 type Tab = 'join' | 'create'
 
 export default function GroupSetupScreen() {
+  const router = useRouter()                       // ← AÑADIDO
   const { user, setCurrentGroup } = useAuth()
   const [tab, setTab] = useState<Tab>('join')
 
@@ -33,7 +35,6 @@ export default function GroupSetupScreen() {
     }
     setLoading(true)
 
-    // Buscar el grupo
     const { data: group, error } = await supabase
       .from('groups')
       .select('*')
@@ -46,7 +47,6 @@ export default function GroupSetupScreen() {
       return
     }
 
-    // Unirse como member
     const { error: joinError } = await supabase
       .from('group_members')
       .insert({ group_id: group.id, user_id: user!.id, role: 'member' })
@@ -54,12 +54,12 @@ export default function GroupSetupScreen() {
     setLoading(false)
 
     if (joinError && joinError.code !== '23505') {
-      // 23505 = ya es miembro (unique violation), ignorar
       Alert.alert('Error al unirse', joinError.message)
       return
     }
 
     setCurrentGroup(group as Group)
+    router.replace('/onboarding/permissions')      // ← AÑADIDO: continúa el alta
   }
 
   async function handleCreate() {
@@ -84,7 +84,6 @@ export default function GroupSetupScreen() {
       codeExists = !!existing
     }
 
-    // Crear grupo
     const { data: group, error } = await supabase
       .from('groups')
       .insert({
@@ -103,13 +102,13 @@ export default function GroupSetupScreen() {
       return
     }
 
-    // Unirse como admin
     await supabase
       .from('group_members')
       .insert({ group_id: group.id, user_id: user!.id, role: 'admin' })
 
     setLoading(false)
     setCurrentGroup(group as Group)
+    router.replace('/onboarding/permissions')      // ← AÑADIDO: continúa el alta
   }
 
   return (
@@ -119,7 +118,7 @@ export default function GroupSetupScreen() {
     >
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
         <Text style={styles.emoji}>🥂</Text>
-        <Text style={styles.title}>Tu despedida</Text>
+        <Text style={styles.title}>Tu viaje</Text>
         <Text style={styles.subtitle}>
           ¿Te han enviado un código? Únete al grupo.{'\n'}
           ¿Eres el organizador? Crea uno nuevo.
@@ -131,17 +130,13 @@ export default function GroupSetupScreen() {
             style={[styles.tab, tab === 'join' && styles.tabActive]}
             onPress={() => setTab('join')}
           >
-            <Text style={[styles.tabText, tab === 'join' && styles.tabTextActive]}>
-              Unirse
-            </Text>
+            <Text style={[styles.tabText, tab === 'join' && styles.tabTextActive]}>Unirse</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, tab === 'create' && styles.tabActive]}
             onPress={() => setTab('create')}
           >
-            <Text style={[styles.tabText, tab === 'create' && styles.tabTextActive]}>
-              Crear grupo
-            </Text>
+            <Text style={[styles.tabText, tab === 'create' && styles.tabTextActive]}>Crear grupo</Text>
           </TouchableOpacity>
         </View>
 
@@ -159,15 +154,8 @@ export default function GroupSetupScreen() {
               autoCapitalize="characters"
               autoCorrect={false}
             />
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleJoin}
-              disabled={loading}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.primaryButtonText}>Unirme al grupo</Text>
-              }
+            <TouchableOpacity style={styles.primaryButton} onPress={handleJoin} disabled={loading}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Unirme al grupo</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -178,7 +166,7 @@ export default function GroupSetupScreen() {
             <Text style={styles.label}>Nombre del grupo *</Text>
             <TextInput
               style={styles.input}
-              placeholder="La despedida de Marcos"
+              placeholder="La despedida de Jordan"
               placeholderTextColor={COLORS.muted}
               value={groupName}
               onChangeText={setGroupName}
@@ -187,7 +175,7 @@ export default function GroupSetupScreen() {
             <Text style={styles.label}>Nombre del novio <Text style={styles.optional}>(opcional)</Text></Text>
             <TextInput
               style={styles.input}
-              placeholder="Marcos"
+              placeholder="Jordan"
               placeholderTextColor={COLORS.muted}
               value={groomName}
               onChangeText={setGroomName}
@@ -196,22 +184,15 @@ export default function GroupSetupScreen() {
             <Text style={styles.label}>Fecha de la despedida <Text style={styles.optional}>(opcional)</Text></Text>
             <TextInput
               style={styles.input}
-              placeholder="2025-06-15"
+              placeholder="2026-09-12"
               placeholderTextColor={COLORS.muted}
               value={countdownDate}
               onChangeText={setCountdownDate}
             />
             <Text style={styles.hint}>Formato: YYYY-MM-DD</Text>
 
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleCreate}
-              disabled={loading}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.primaryButtonText}>Crear grupo</Text>
-              }
+            <TouchableOpacity style={styles.primaryButton} onPress={handleCreate} disabled={loading}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Crear grupo</Text>}
             </TouchableOpacity>
 
             <View style={styles.codeInfo}>
@@ -233,11 +214,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: COLORS.text, textAlign: 'center' },
   subtitle: { fontSize: 15, color: COLORS.muted, textAlign: 'center', marginTop: 6, marginBottom: 28, lineHeight: 22 },
   tabs: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: 4,
-    marginBottom: 28,
+    flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: 4, marginBottom: 28,
   },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: RADIUS.sm },
   tabActive: { backgroundColor: COLORS.primary },
@@ -248,36 +225,15 @@ const styles = StyleSheet.create({
   optional: { fontWeight: '400', color: COLORS.muted },
   hint: { fontSize: 12, color: COLORS.muted, marginTop: -14, marginBottom: 16 },
   input: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    fontSize: 16,
-    color: COLORS.text,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: 16, fontSize: 16,
+    color: COLORS.text, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border,
   },
-  codeInput: {
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: 8,
-    textAlign: 'center',
-  },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
+  codeInput: { fontSize: 28, fontWeight: '700', letterSpacing: 8, textAlign: 'center' },
+  primaryButton: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, padding: 16, alignItems: 'center', marginTop: 4 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   codeInfo: {
-    marginTop: 20,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
+    marginTop: 20, backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: 16,
+    borderLeftWidth: 3, borderLeftColor: COLORS.primary,
   },
   codeInfoText: { fontSize: 14, color: COLORS.muted, lineHeight: 20 },
 })

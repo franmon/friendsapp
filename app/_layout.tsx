@@ -11,54 +11,45 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 // Componente que gestiona las redirecciones según el estado de auth
 function NavigationGuard({ children }: { children: React.ReactNode }) {
-  const { session, loading, currentGroup } = useAuth()
+  const { session, loading, profile, currentGroup } = useAuth()
   const segments = useSegments()
   const router = useRouter()
 
+  // ¿Ha terminado el alta? (los usuarios antiguos ya tienen grupo → se consideran hechos)
+  const onboarded = !!profile?.onboarding_complete
+
   useEffect(() => {
-      if (session) {
-        requestNotificationPermissions()
-      }
-    }, [session])
+    if (session) {
+      requestNotificationPermissions()
+    }
+  }, [session])
 
   useEffect(() => {
     if (loading) return
+    // Espera a tener el perfil cargado para no decidir con datos a medias
+    if (session && !profile) return
 
     const inAuthGroup = segments[0] === '(auth)'
     const inGroupSetup = segments[0] === 'group-setup'
+    const inOnboarding = segments[0] === 'onboarding'
+    // Zonas por las que el usuario puede moverse mientras hace el alta
+    const inOnboardingFlow = inAuthGroup || inOnboarding || inGroupSetup
 
     if (!session) {
-      // Sin sesión → ir a login
-      if (!inAuthGroup) router.replace('/(auth)/login')
-    } else if (!currentGroup && !inGroupSetup) {
-      // Con sesión pero sin grupo → ir a selección de grupo
-      router.replace('/group-setup')
-    } else if (session && currentGroup && (inAuthGroup || inGroupSetup)) {
-      // Con sesión y grupo → ir a la app
+      // Sin sesión → ir a bienvenida
+      if (!inAuthGroup) router.replace('/(auth)/welcome')
+    } else if (!onboarded) {
+      // Con sesión pero sin terminar el alta → dejarle recorrer welcome/registro,
+      // onboarding y group-setup. Si está fuera de esas zonas, mándale al perfil.
+      if (!inOnboardingFlow) router.replace('/onboarding/profile')
+    } else if (onboarded && inOnboardingFlow) {
+      // Alta terminada y todavía en pantallas de alta → entrar a la app
       router.replace('/(tabs)')
     }
-  }, [session, loading, currentGroup, segments])
+  }, [session, loading, profile, onboarded, segments])
 
   return <>{children}</>
 }
-
-/* export default function RootLayout() {
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <NavigationGuard>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="group-setup" />
-          </Stack>
-          <StatusBar style="auto" />
-        </NavigationGuard>
-      </AuthProvider>
-    </GestureHandlerRootView>
-  )
-} */
-
 
 export default function RootLayout() {
   return (
@@ -68,6 +59,7 @@ export default function RootLayout() {
           <NavigationGuard>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" />
+              <Stack.Screen name="onboarding" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="group-setup" />
               <Stack.Screen name="event-new" options={{ presentation: 'modal' }} />

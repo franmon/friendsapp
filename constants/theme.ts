@@ -1,12 +1,16 @@
 // ============================================================
-// BACHELORAPP — Design Tokens
+// BACHELORAPP / DespedidaJordan — Design Tokens
+// Reskin azul + naranja. Mantiene las MISMAS claves que tu
+// theme.ts actual, así que todas las pantallas existentes
+// (login, group-setup, tabs…) se re-tematizan automáticamente.
 // ============================================================
 
 export const COLORS = {
   // Marca
-  primary: '#6C63FF',        // Violeta principal
-  primaryLight: '#EAE9FF',   // Violeta claro (fondo de pills, etc.)
-  accent: '#FF6584',         // Rosa acento (fotos, cápsula del tiempo)
+  primary: '#2563EB',        // Azul principal  (antes violeta #6C63FF)
+  primaryLight: '#EAF1FF',   // Azul claro (fondos de pills, etc.)
+  accent: '#F4612A',         // Naranja acento  (antes rosa #FF6584)
+  accentLight: '#FFF1E9',    // Naranja claro (fondos suaves)
 
   // Semánticos
   success: '#22C55E',
@@ -15,25 +19,25 @@ export const COLORS = {
   info: '#3B82F6',
 
   // Neutros
-  text: '#1A1A2E',
+  text: '#14213D',
   muted: '#6B7280',
-  border: '#E5E7EB',
-  surface: '#F9FAFB',
+  border: '#E6E9EF',
+  surface: '#F6F8FB',
   background: '#FFFFFF',
 
   // Categorías de gastos
   categoryFood: '#F59E0B',
   categoryTransport: '#3B82F6',
-  categoryActivity: '#6C63FF',
+  categoryActivity: '#2563EB',   // antes violeta → ahora azul
   categoryHotel: '#22C55E',
   categoryGeneral: '#6B7280',
 }
 
 export const RADIUS = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 26,
   full: 9999,
 }
 

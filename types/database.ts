@@ -29,6 +29,7 @@ export interface Profile {
   avatar_url: string | null
   allergies: string | null
   updated_at: string
+  onboarding_complete: boolean
 }
 
 // ── Miembro del grupo ─────────────────────────────────────────
