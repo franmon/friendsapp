@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [currentGroup, setCurrentGroup] = useState<Group | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -79,27 +79,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, currentGroup])
 
     async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
 
-    setProfile(data)
+      // data será el perfil, o null si no existe. Nunca undefined.
+      setProfile(data ?? null)
 
-    const { data: membership} = await supabase
-      .from('group_members')
-      .select('group:groups(*)')
-      .eq('user_id', userId)
-      .order('joined_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      const { data: membership } = await supabase
+        .from('group_members')
+        .select('group:groups(*)')
+        .eq('user_id', userId)
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    if (membership?.group) {
-      setCurrentGroup(membership.group as any)
+      if (membership?.group) {
+        setCurrentGroup(membership.group as any)
+      }
+    } catch (e) {
+      // Si algo falla, no dejar el perfil en undefined (eso colgaría el spinner)
+      setProfile(null)
+    } finally {
+      // Pase lo que pase, terminamos la carga
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
 

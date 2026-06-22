@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Stack, useRouter, useSegments } from 'expo-router'
+import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
@@ -12,69 +12,41 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 // Componente que gestiona las redirecciones según el estado de auth
 function NavigationGuard({ children }: { children: React.ReactNode }) {
-  const { session, loading, profile, currentGroup } = useAuth()
+  const { session, loading, profile } = useAuth()
   const segments = useSegments()
+  const navigationState = useRootNavigationState()
   const router = useRouter()
 
-  // ¿Ha terminado el alta? (los usuarios antiguos ya tienen grupo → se consideran hechos)
   const onboarded = !!profile?.onboarding_complete
+  const rootSegment = segments[0]
 
   useEffect(() => {
-    if (session) {
-      requestNotificationPermissions()
-    }
-  }, [session])
-
-/*  useEffect(() => {
+    // 1. No hacer NADA hasta que el navegador esté montado (evita replace prematuro)
+    if (!navigationState?.key) return
+    // 2. Esperar a que termine la carga de sesión
     if (loading) return
-    // Espera a tener el perfil cargado para no decidir con datos a medias
-    if (session && !profile) return
+    // 3. Si hay sesión pero el perfil aún no llegó, esperar (pero ver nota abajo)
+    if (session && profile === undefined) return
 
-    const inAuthGroup = segments[0] === '(auth)'
-    const inGroupSetup = segments[0] === 'group-setup'
-    const inOnboarding = segments[0] === 'onboarding'
-    // Zonas por las que el usuario puede moverse mientras hace el alta
-    const inOnboardingFlow = inAuthGroup || inOnboarding || inGroupSetup
+    const inAuthGroup = rootSegment === '(auth)'
+    const inOnboardingFlow =
+      inAuthGroup || rootSegment === 'onboarding' || rootSegment === 'group-setup'
 
     if (!session) {
-      // Sin sesión → ir a bienvenida
+      // Sin sesión → mandar a bienvenida solo si no está ya en la zona de auth
       if (!inAuthGroup) router.replace('/(auth)/welcome')
     } else if (!onboarded) {
-      // Con sesión pero sin terminar el alta → dejarle recorrer welcome/registro,
-      // onboarding y group-setup. Si está fuera de esas zonas, mándale al perfil.
-      if (!inOnboardingFlow) router.replace('/onboarding/profile')
-    } else if (onboarded && inOnboardingFlow) {
-      // Alta terminada y todavía en pantallas de alta → entrar a la app
-      router.replace('/(tabs)')
-    }
-  }, [session, loading, profile, onboarded, segments])
-  */
-
-useEffect(() => {
-    if (loading) return
-    if (session && !profile) return
-
-    const inAuthGroup = segments[0] === '(auth)'
-    const inGroupSetup = segments[0] === 'group-setup'
-    const inOnboarding = segments[0] === 'onboarding'
-    const inTabs = segments[0] === '(tabs)'
-    const inOnboardingFlow = inAuthGroup || inOnboarding || inGroupSetup
-
-    if (!session) {
-      // Sin sesión → ir a bienvenida
-      if (!inAuthGroup) router.replace('/(auth)/welcome')
-    } else if (!onboarded) {
-      // Con sesión pero sin terminar el alta
+      // Logueado pero sin completar el alta → al onboarding (si no está ya en esa zona)
       if (!inOnboardingFlow) router.replace('/onboarding/profile')
     } else {
-      // Logueado y onboarding completo → entrar a la app si no está ya dentro
-      if (!inTabs) router.replace('/(tabs)')
+      // Logueado y con alta completa. Solo sacarlo de las zonas de alta/auth.
+      // Si está en cualquier otra pantalla (tabs o pantallas del stack), NO tocar.
+      if (inOnboardingFlow) router.replace('/(tabs)')
     }
-  }, [session, loading, profile, onboarded, segments])
+  }, [navigationState?.key, loading, session, profile, onboarded, rootSegment])
 
-
-// Mientras se decide a dónde ir, mostrar un spinner en vez de una pantalla a medias
-  const decidiendo = loading || (session && !profile)
+  // Spinner mientras se decide (navegador no listo, cargando, o perfil en camino)
+  const decidiendo = !navigationState?.key || loading || (session && profile === undefined)
   if (decidiendo) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background }}>
@@ -84,9 +56,9 @@ useEffect(() => {
   }
 
   return <>{children}</>
-
-//  return <>{children}</>
 }
+
+
 
 export default function RootLayout() {
   return (
