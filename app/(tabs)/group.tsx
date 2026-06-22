@@ -32,8 +32,6 @@ export default function GroupScreen() {
       .eq('group_id', currentGroup.id)
       .order('joined_at', { ascending: true })
 
-    console.log('MIEMBROS - error:', JSON.stringify(error))
-    console.log('MIEMBROS - cuántos:', data?.length)
     setMembers((data as MemberWithProfile[]) ?? [])
     
 

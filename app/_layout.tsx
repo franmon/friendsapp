@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { COLORS } from '@/constants/theme'
+import { View, ActivityIndicator } from 'react-native'
 
 import { requestNotificationPermissions } from '@/lib/notifications'
 
@@ -24,7 +25,7 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
     }
   }, [session])
 
-  useEffect(() => {
+/*  useEffect(() => {
     if (loading) return
     // Espera a tener el perfil cargado para no decidir con datos a medias
     if (session && !profile) return
@@ -47,8 +48,44 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
       router.replace('/(tabs)')
     }
   }, [session, loading, profile, onboarded, segments])
+  */
+
+useEffect(() => {
+    if (loading) return
+    if (session && !profile) return
+
+    const inAuthGroup = segments[0] === '(auth)'
+    const inGroupSetup = segments[0] === 'group-setup'
+    const inOnboarding = segments[0] === 'onboarding'
+    const inTabs = segments[0] === '(tabs)'
+    const inOnboardingFlow = inAuthGroup || inOnboarding || inGroupSetup
+
+    if (!session) {
+      // Sin sesión → ir a bienvenida
+      if (!inAuthGroup) router.replace('/(auth)/welcome')
+    } else if (!onboarded) {
+      // Con sesión pero sin terminar el alta
+      if (!inOnboardingFlow) router.replace('/onboarding/profile')
+    } else {
+      // Logueado y onboarding completo → entrar a la app si no está ya dentro
+      if (!inTabs) router.replace('/(tabs)')
+    }
+  }, [session, loading, profile, onboarded, segments])
+
+
+// Mientras se decide a dónde ir, mostrar un spinner en vez de una pantalla a medias
+  const decidiendo = loading || (session && !profile)
+  if (decidiendo) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    )
+  }
 
   return <>{children}</>
+
+//  return <>{children}</>
 }
 
 export default function RootLayout() {

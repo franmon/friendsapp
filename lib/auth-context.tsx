@@ -78,8 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(({ data }) => setIsAdmin(data?.role === 'admin'))
   }, [user, currentGroup])
 
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase
+    async function fetchProfile(userId: string) {
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -87,8 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setProfile(data)
 
-    // Cargar automáticamente el grupo del usuario (si pertenece a alguno)
-    const { data: membership } = await supabase
+    const { data: membership} = await supabase
       .from('group_members')
       .select('group:groups(*)')
       .eq('user_id', userId)
@@ -102,7 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setLoading(false)
   }
-  
+
+
+
   async function refreshProfile() {
     if (user) await fetchProfile(user.id)
   }

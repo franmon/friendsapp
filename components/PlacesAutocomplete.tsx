@@ -48,7 +48,6 @@ export function PlacesAutocomplete({
   }
 
 async function fetchSuggestions(text: string) {
-    console.log('PLACES KEY existe?:', !!PLACES_KEY)
     if (!PLACES_KEY) return
     setLoading(true)
     try {
@@ -64,7 +63,6 @@ async function fetchSuggestions(text: string) {
         }),
       })
       const data = await res.json()
-      console.log('PLACES respuesta:', JSON.stringify(data))
 
       const list: Suggestion[] = (data.suggestions ?? [])
         .filter((s: any) => s.placePrediction)
