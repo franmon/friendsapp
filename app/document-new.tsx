@@ -89,7 +89,7 @@ export default function NewDocumentScreen() {
 
     if (error || !doc) {
       setSaving(false)
-      console.log('ERROR EVENTO:', JSON.stringify(error, null, 2))
+//      console.log('ERROR EVENTO:', JSON.stringify(error, null, 2))
       Alert.alert('Error al guardar', error?.message)
       return
     }

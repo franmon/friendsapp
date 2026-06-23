@@ -2,13 +2,14 @@ import { View, Text, StyleSheet } from 'react-native'
 import { Photo } from '@/types/database'
 import { COLORS } from '@/constants/theme'
 
-interface PhotoMapProps {
-  photos: Photo[]
-  onMarkerPress: (photo: Photo) => void
+
+interface PhotoMapProps<T extends Photo = Photo> {
+  photos: T[]
+  onMarkerPress: (photo: T) => void
 }
 
 // Versión web: el mapa nativo no está disponible, mostramos una lista de lugares
-export function PhotoMap({ photos, onMarkerPress }: PhotoMapProps) {
+export function PhotoMap<T extends Photo>({ photos, onMarkerPress }: PhotoMapProps<T>) {
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>🗺️</Text>

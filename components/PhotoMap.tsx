@@ -2,13 +2,14 @@ import MapView, { Marker } from 'react-native-maps'
 import { StyleSheet } from 'react-native'
 import { Photo } from '@/types/database'
 
-interface PhotoMapProps {
-  photos: Photo[]
-  onMarkerPress: (photo: Photo) => void
+
+interface PhotoMapProps<T extends Photo = Photo> {
+  photos: T[]
+  onMarkerPress: (photo: T) => void
 }
 
 // Versión nativa (iOS/Android): mapa real con marcadores
-export function PhotoMap({ photos, onMarkerPress }: PhotoMapProps) {
+export function PhotoMap<T extends Photo>({ photos, onMarkerPress }: PhotoMapProps<T>) {
   if (photos.length === 0) return null
   return (
     <MapView

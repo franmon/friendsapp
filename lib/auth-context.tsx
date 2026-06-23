@@ -6,7 +6,7 @@ import { Profile, Group } from '@/types/database'
 interface AuthContextType {
   session: Session | null
   user: User | null
-  profile: Profile | null
+  profile: Profile | null | undefined
   currentGroup: Group | null
   isAdmin: boolean
   loading: boolean
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(({ data }) => setIsAdmin(data?.role === 'admin'))
   }, [user, currentGroup])
 
-    async function fetchProfile(userId: string) {
+  async function fetchProfile(userId: string) {
     try {
       const { data } = await supabase
         .from('profiles')
@@ -108,8 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     }
   }
-
-
 
   async function refreshProfile() {
     if (user) await fetchProfile(user.id)

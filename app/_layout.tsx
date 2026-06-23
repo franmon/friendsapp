@@ -46,7 +46,8 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
   }, [navigationState?.key, loading, session, profile, onboarded, rootSegment])
 
   // Spinner mientras se decide (navegador no listo, cargando, o perfil en camino)
-  const decidiendo = !navigationState?.key || loading || (session && profile === undefined)
+//  const decidiendo = !navigationState?.key || loading || (session && profile === undefined)
+  const decidiendo = loading || (session && profile === undefined)
   if (decidiendo) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background }}>
