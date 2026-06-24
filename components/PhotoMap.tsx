@@ -2,8 +2,7 @@ import MapView, { Marker } from 'react-native-maps'
 import { StyleSheet } from 'react-native'
 import { Photo } from '@/types/database'
 
-
-interface PhotoMapProps<T extends Photo = Photo> {
+interface PhotoMapProps<T extends Photo> {
   photos: T[]
   onMarkerPress: (photo: T) => void
 }

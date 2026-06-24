@@ -1,9 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
-
-
 
 // Variables de entorno — copiar en .env
 // EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
@@ -12,15 +9,10 @@ import { Platform } from 'react-native'
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
 
-// SecureStore para tokens de auth (más seguro que AsyncStorage)
-/*const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
-}
-*/
-
-// Almacenamiento de sesión: SecureStore en móvil, localStorage en web
+// Almacenamiento de sesión:
+//  - Web: localStorage
+//  - Móvil: AsyncStorage (NO SecureStore, que tiene límite de 2048 bytes y el
+//    token de Supabase lo supera, lo que colgaba la app al reabrir)
 const storageAdapter = Platform.OS === 'web'
   ? {
       getItem: (key: string) => {
@@ -36,23 +28,16 @@ const storageAdapter = Platform.OS === 'web'
         return Promise.resolve()
       },
     }
-  : {
-      getItem: (key: string) => SecureStore.getItemAsync(key),
-      setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-      removeItem: (key: string) => SecureStore.deleteItemAsync(key),
-    }
-
+  : AsyncStorage
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-//    storage: ExpoSecureStoreAdapter,
     storage: storageAdapter,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
 })
-
 
 // Helper para obtener URL pública de un archivo en Storage
 export function getPublicUrl(bucket: string, path: string): string {

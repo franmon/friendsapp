@@ -1,52 +1,54 @@
 import { useEffect } from 'react'
-import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router'
+import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
+import { requestNotificationPermissions } from '@/lib/notifications'
 import { COLORS } from '@/constants/theme'
 import { View, ActivityIndicator } from 'react-native'
-
-import { requestNotificationPermissions } from '@/lib/notifications'
-
-import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 // Componente que gestiona las redirecciones según el estado de auth
 function NavigationGuard({ children }: { children: React.ReactNode }) {
   const { session, loading, profile } = useAuth()
   const segments = useSegments()
-  const navigationState = useRootNavigationState()
   const router = useRouter()
 
   const onboarded = !!profile?.onboarding_complete
-  const rootSegment = segments[0]
+
+  // Pedir permiso de notificaciones cuando hay sesión
+  useEffect(() => {
+    if (session) {
+      requestNotificationPermissions()
+    }
+  }, [session])
 
   useEffect(() => {
-    // 1. No hacer NADA hasta que el navegador esté montado (evita replace prematuro)
-    if (!navigationState?.key) return
-    // 2. Esperar a que termine la carga de sesión
     if (loading) return
-    // 3. Si hay sesión pero el perfil aún no llegó, esperar (pero ver nota abajo)
+    // Si hay sesión pero el perfil aún no ha cargado, esperar (no decidir todavía)
     if (session && profile === undefined) return
 
-    const inAuthGroup = rootSegment === '(auth)'
-    const inOnboardingFlow =
-      inAuthGroup || rootSegment === 'onboarding' || rootSegment === 'group-setup'
+    const inAuthGroup = segments[0] === '(auth)'
+    const inOnboarding = segments[0] === 'onboarding'
+    const inGroupSetup = segments[0] === 'group-setup'
+    const inOnboardingFlow = inAuthGroup || inOnboarding || inGroupSetup
+    const enRaiz = segments[0] === undefined
 
     if (!session) {
-      // Sin sesión → mandar a bienvenida solo si no está ya en la zona de auth
+      // Sin sesión → bienvenida (si no está ya en la zona de auth)
       if (!inAuthGroup) router.replace('/(auth)/welcome')
     } else if (!onboarded) {
-      // Logueado pero sin completar el alta → al onboarding (si no está ya en esa zona)
+      // Con sesión pero sin completar el alta → onboarding (si no está ya ahí)
       if (!inOnboardingFlow) router.replace('/onboarding/profile')
-    } else {
-      // Logueado y con alta completa. Solo sacarlo de las zonas de alta/auth.
-      // Si está en cualquier otra pantalla (tabs o pantallas del stack), NO tocar.
-      if (inOnboardingFlow) router.replace('/(tabs)')
+    } else if (session && onboarded && (inOnboardingFlow || enRaiz)) {
+      // Logueado y con alta completa, pero en zona de alta o en la raíz
+      // (al reabrir) → entrar a la app
+      router.replace('/(tabs)')
     }
-  }, [navigationState?.key, loading, session, profile, onboarded, rootSegment])
+  }, [session, loading, onboarded, segments])
 
-  // Spinner mientras se decide (navegador no listo, cargando, o perfil en camino)
-//  const decidiendo = !navigationState?.key || loading || (session && profile === undefined)
+  // Mientras se decide (cargando o perfil aún en camino), mostrar spinner
+  // en vez de dejar ver una pantalla incorrecta un instante
   const decidiendo = loading || (session && profile === undefined)
   if (decidiendo) {
     return (
@@ -58,8 +60,6 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>
 }
-
-
 
 export default function RootLayout() {
   return (
@@ -74,6 +74,7 @@ export default function RootLayout() {
               <Stack.Screen name="group-setup" />
               <Stack.Screen name="event-new" options={{ presentation: 'modal' }} />
               <Stack.Screen name="expense-new" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="document-new" options={{ presentation: 'modal' }} />
               <Stack.Screen name="polls" options={{ headerShown: true }} />
               <Stack.Screen name="poll-new" options={{ presentation: 'modal' }} />
               <Stack.Screen name="timeline" options={{ headerShown: true }} />

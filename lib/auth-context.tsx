@@ -40,8 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
+        setLoading(false)
+      }
+    }).catch(() => {
+      // Si getSession falla, no quedarse colgado en el spinner
+      setLoading(false)
     })
 
     // Escuchar cambios de auth
@@ -60,7 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   // Recalcular isAdmin cuando cambia el grupo
@@ -80,13 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function fetchProfile(userId: string) {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
-      // data será el perfil, o null si no existe. Nunca undefined.
+      if (error) throw error
       setProfile(data ?? null)
 
       const { data: membership } = await supabase

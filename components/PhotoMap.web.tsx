@@ -2,8 +2,7 @@ import { View, Text, StyleSheet } from 'react-native'
 import { Photo } from '@/types/database'
 import { COLORS } from '@/constants/theme'
 
-
-interface PhotoMapProps<T extends Photo = Photo> {
+interface PhotoMapProps<T extends Photo> {
   photos: T[]
   onMarkerPress: (photo: T) => void
 }
