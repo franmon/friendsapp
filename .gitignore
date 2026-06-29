@@ -42,3 +42,12 @@ yarn-error.*
 
 .env
 .env*
+
+# Builds locales
+despedida.apk
+*.apk
+*.aab
+# Nativo y temporales
+android/
+ios/
+tmp/
