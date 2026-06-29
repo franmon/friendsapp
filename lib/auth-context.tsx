@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { Profile, Group } from '@/types/database'
@@ -35,16 +35,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // Evita el doble fetchProfile al arrancar: getSession y onAuthStateChange
+  // disparan ambos con la sesión inicial. Guardamos el userId que se está
+  // cargando (o ya cargado) para no relanzar la misma petición en paralelo.
+  // Es un ref para no provocar re-renders ni carreras entre los dos callbacks.
+  const fetchingUserId = useRef<string | null>(null)
+
   useEffect(() => {
     // Cargar sesión inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
+      handleSession(session)
     }).catch(() => {
       // Si getSession falla, no quedarse colgado en el spinner
       setLoading(false)
@@ -52,24 +52,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Escuchar cambios de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
-          setProfile(null)
-          setCurrentGroup(null)
-          setIsAdmin(false)
-          setLoading(false)
-        }
+      (_event, session) => {
+        handleSession(session)
       }
     )
 
     return () => {
       subscription.unsubscribe()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Punto único de entrada para cualquier cambio de sesión (inicial o posterior).
+  async function handleSession(session: Session | null) {
+    setSession(session)
+    setUser(session?.user ?? null)
+
+    if (session?.user) {
+      // Si ya estamos cargando (o hemos cargado) el perfil de este mismo
+      // usuario, no relanzamos: evita el doble fetch solapado del arranque.
+      if (fetchingUserId.current === session.user.id) {
+        return
+      }
+      fetchingUserId.current = session.user.id
+      await fetchProfile(session.user.id)
+    } else {
+      // Sin sesión: limpiar todo.
+      fetchingUserId.current = null
+      setProfile(null)
+      setCurrentGroup(null)
+      setIsAdmin(false)
+      setLoading(false)
+    }
+  }
 
   // Recalcular isAdmin cuando cambia el grupo
   useEffect(() => {
@@ -111,6 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       // Si algo falla, no dejar el perfil en undefined (eso colgaría el spinner)
       setProfile(null)
+      // Permitir reintento posterior (p.ej. vía refreshProfile) si esta carga falló.
+      fetchingUserId.current = null
     } finally {
       // Pase lo que pase, terminamos la carga
       setLoading(false)
@@ -118,7 +135,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function refreshProfile() {
-    if (user) await fetchProfile(user.id)
+    if (user) {
+      // refreshProfile es una recarga explícita: saltamos la guarda.
+      fetchingUserId.current = user.id
+      await fetchProfile(user.id)
+    }
   }
 
   async function signOut() {
