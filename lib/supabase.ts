@@ -9,6 +9,9 @@ import { Platform } from 'react-native'
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
 
+
+console.log('SUPABASE URL EN USO:', process.env.EXPO_PUBLIC_SUPABASE_URL)
+
 // Almacenamiento de sesión:
 //  - Web: localStorage
 //  - Móvil: AsyncStorage (NO SecureStore, que tiene límite de 2048 bytes y el
